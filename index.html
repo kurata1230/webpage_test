@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学習塾生徒ダッシュボード</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --main-purple: #6b5b95;
+            --light-purple: #8a7cb3;
+            --very-light-purple: #f5f3fa;
+            --border-color: #e0e0e0;
+        }
+        
+        body {
+            font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        
+        .search-bar {
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px 0;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-bar input {
+            width: 70%;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .panel {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .panel-header {
+            background-color: var(--main-purple);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .student-info {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 10px;
+        }
+        
+        .student-info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .student-info-value {
+            color: #333;
+        }
+        
+        .school-preferences {
+            margin-top: 10px;
+        }
+        
+        .preference-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 40px;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .preference-header {
+            background-color: var(--light-purple);
+            color: white;
+            font-weight: bold;
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .test-scores {
+            height: 300px;
+        }
+        
+        .radar-chart-container {
+            height: 250px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .student-type {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .student-type-title {
+            color: var(--main-purple);
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        
+        .student-type-icon {
+            color: var(--main-purple);
+            font-size: 40px;
+            margin: 15px 0;
+        }
+        
+        .student-type-description {
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 10px 0;
+            text-align: justify;
+        }
+        
+        .attributes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .attribute-item {
+            display: grid;
+            grid-template-columns: 90px 1fr;
+            padding: 5px;
+            background-color: var(--very-light-purple);
+            border-radius: 5px;
+        }
+        
+        .attribute-label {
+            font-weight: bold;
+            color: var(--main-purple);
+            font-size: 13px;
+        }
+        
+        .attribute-value {
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .action-log {
+            grid-column: span 2;
+        }
+        
+        .log-entry {
+            display: grid;
+            grid-template-columns: 90px 1fr;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .log-date {
+            color: var(--main-purple);
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .log-content {
+            font-size: 13px;
+        }
+        
+        .ai-advice {
+            grid-column: span 2;
+        }
+        
+        .advice-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .advice-card {
+            background-color: var(--very-light-purple);
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .advice-title {
+            color: var(--main-purple);
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .advice-content {
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" placeholder="生徒名を検索">
+        </div>
+        
+        <div class="dashboard">
+            <!-- 基本情報パネル -->
+            <div class="panel">
+                <div class="panel-header">氏名</div>
+                <div class="student-info">
+                    <div class="student-info-value">田中 太郎</div>
+                </div>
+                
+                <div class="panel-header">学校・学年</div>
+                <div class="student-info">
+                    <div class="student-info-value" style="white-space: nowrap;">県立 X中学校・2年生</div>
+                </div>
+                
+                <div class="panel-header">志望校</div>
+                <div class="school-preferences">
+                    <div class="preference-row preference-header">
+                        <div>順位</div>
+                        <div>学校名</div>
+                        <div>判定</div>
+                    </div>
+                    <div class="preference-row">
+                        <div>第一志望</div>
+                        <div>県立 XXX高等学校</div>
+                        <div>D</div>
+                    </div>
+                    <div class="preference-row">
+                        <div>第二志望</div>
+                        <div>県立 YYY高等学校</div>
+                        <div>B</div>
+                    </div>
+                    <div class="preference-row">
+                        <div>第三志望</div>
+                        <div>私立 ZZZ高等学校</div>
+                        <div>A</div>
+                    </div>
+                </div>
+                
+                <div class="panel-header">成績推移</div>
+                <div class="test-scores">
+                    <canvas id="scoresChart"></canvas>
+                </div>
+                
+                <div class="panel-header">応対記録</div>
+                <div class="action-log">
+                    <div class="log-entry">
+                        <div class="log-date">2025.04.11</div>
+                        <div class="log-content">英作文対策について相談。複雑な文法構造を簡潔な表現に置き換えることで高得点につながると伝えた。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-date">2025.01.22</div>
+                        <div class="log-content">予習計画について相談を受ける。今月〜２月は苦手な英語に集中し、３月以降に理科と社会の対策を進めることを提案した。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-date">2024.12.28</div>
+                        <div class="log-content">冬休み勉強法について相談。毎日、計画通りに勉強できているか確認して、必要に応じて軌道修正。自習室の積極的な活用も促した。</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右側パネル -->
+            <div class="panel">
+                <div class="panel-header">直近の模試成績</div>
+                <div class="test-result">
+                    <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">第3回 福岡県高校入試模擬試験</div>
+                    <div class="radar-chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="panel-header">生徒タイプ</div>
+                <div class="student-type">
+                    <div class="student-type-title">関心理解集中タイプ</div>
+                    <div class="student-type-icon">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzZiNWI5NTt9PC9zdHlsZT48L2RlZnM+PHBhdGggY2xhc3M9ImNscy0xIiBkPSJNODQuMiw0MS40YzAtMTUuNy0xMy4xLTM2LTM0LjItMzZTMTUuOCwyNS43LDE1LjgsNDEuNHM2LjUsMjQuOSwxNi41LDMwLjVINDRWNTUuMUgzMC42Vjc2LjRjMCw1LjEsNC4yLDkuMiw5LjMsOS4ySDQyVjczLjFINTVWODUuNmgzLjRjNS4xLDAsOS4zLTQuMSw5LjMtOS4yVjU1LjFINTR2MTYuN0g2OEM3Ny44LDY2LjMsODQuMiw1Ny4xLDg0LjIsNDEuNFpNNDAuNiw0NS42YzAsLjUtLjQsLjktLjksLjloLTUuNGMtLjUsMC0uOS0uNC0uOS0uOVYzOS40YzAtLjUsLjQtLjksLjktLjloNS40Yy41LDAsLjksLjQsLjksLjlabTI2LjEsMGMwLC41LS40LC45LS45LC45aC01LjRjLS41LDAtLjktLjQtLjktLjlWMzkuNGMwLS41LC40LS45LC45LS45aDUuNGMuNSwwLC45LC40LC45LC45WiIvPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTIzLjksMjMuM2MtLjQtLjQtLjQtMSwwLTEuNGw3LjEtNy4xYy40LS40LDEtLjQsMS40LDBzLjQsMSwwLDEuNGwtNy4xLDcuMWMtLjIsLjItLjUsLjMtLjcsLjNzLS41LS4xLS43LS4zWiIvPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTc2LjEsMjMuM2wtNy4xLTcuMWMtLjQtLjQtLjQtMSwwLTEuNHMxLS40LDEuNCwwbDcuMSw3LjFjLjQsLjQsLjQsMSwwLDEuNC0uMiwuMi0uNSwuMy0uNywuM3MtLjUtLjEtLjctLjNaIi8+PHBhdGggY2xhc3M9ImNscy0xIiBkPSJNNDkuNCwzMS4xYzIuMy0xLjEsNS0xLjEsNy40LDBzNCwzLDQsNS40djEuMWMwLDEuOS0xLjUsMy40LTMuNCwzLjRoLTguNmMtMS45LDAtMy40LTEuNS0zLjQtMy40di0xLjFjMC0yLjMsMS42LTQuMiw0LTUuNFoiLz48L3N2Zz4=" alt="関心理解集中タイプアイコン" style="width: 80px; height: 80px; margin: 10px auto;">
+                    </div>
+                    <div class="student-type-description">
+                        知的好奇心が強く、関係性の全体をつかむのが得意。学習過程が面白いタイプです。一方で、指示や課題がないと自分で学習目標を定めるのが苦手なタイプでもあります。
+                    </div>
+                </div>
+                
+                <div class="attributes-grid">
+                    <div class="attribute-item">
+                        <div class="attribute-label">勉強時間</div>
+                        <div class="attribute-value">3-5h/週</div>
+                    </div>
+                    <div class="attribute-item">
+                        <div class="attribute-label">モチベーション</div>
+                        <div class="attribute-value">高</div>
+                    </div>
+                    <div class="attribute-item">
+                        <div class="attribute-label">苦手科目</div>
+                        <div class="attribute-value">英語 数学</div>
+                    </div>
+                    <div class="attribute-item">
+                        <div class="attribute-label">自己評価度</div>
+                        <div class="attribute-value">低</div>
+                    </div>
+                    <div class="attribute-item">
+                        <div class="attribute-label">得意科目</div>
+                        <div class="attribute-value">社会</div>
+                    </div>
+                    <div class="attribute-item">
+                        <div class="attribute-label">自習時間/週間塾</div>
+                        <div class="attribute-value">中</div>
+                    </div>
+                </div>
+                
+                <div class="panel-header">指導アドバイス-AI</div>
+                <div class="advice-container">
+                    <div class="advice-card">
+                        <div class="advice-title">成績</div>
+                        <div class="advice-content">
+                            英語・社会の理解は高い水準にあります。数学の基礎固めが今後の課題です。
+                        </div>
+                    </div>
+                    
+                    <div class="advice-card">
+                        <div class="advice-title">性格・アプローチ</div>
+                        <div class="advice-content">
+                            好奇心が高く、自発的な学習に期待できます。仕組みを理解すると取り組みやすい学習法。学習の意義や目標を明確に示すと効果的です。
+                        </div>
+                    </div>
+                    
+                    <div class="advice-card">
+                        <div class="advice-title">今後の指導方針</div>
+                        <div class="advice-content">
+                            週１〜２回の短い面談で、学習状況の確認と次の目標設定を行うと効果的。特に数学は基礎から固めることを優先すべきです。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // レーダーチャートの描画
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+        const radarChart = new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['国語', '数学', '英語', '理科', '社会'],
+                datasets: [{
+                    label: '得点率',
+                    data: [75, 55, 65, 70, 85],
+                    backgroundColor: 'rgba(107, 91, 149, 0.2)',
+                    borderColor: 'rgba(107, 91, 149, 1)',
+                    pointBackgroundColor: 'rgba(107, 91, 149, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(107, 91, 149, 1)'
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                maintainAspectRatio: false
+            }
+        });
+        
+        // 成績推移グラフの描画
+        const scoresCtx = document.getElementById('scoresChart').getContext('2d');
+        const scoresChart = new Chart(scoresCtx, {
+            type: 'line',
+            data: {
+                labels: ['第1回校内模試', '第2回校内模試', '福岡県統一模試①', '第3回校内模試', '第4回校内模試', '福岡県統一模試②', '第5回校内模試', '第6回校内模試', '福岡県統一模試③', '実力判定テスト'],
+                datasets: [
+                    {
+                        label: '国語',
+                        data: [65, 68, 70, 72, 75, 73, 75, 76, 78, 80],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: '数学',
+                        data: [45, 47, 50, 52, 55, 53, 57, 55, 60, 62],
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: '英語',
+                        data: [55, 56, 60, 62, 65, 67, 68, 70, 72, 75],
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: '理科',
+                        data: [60, 63, 65, 67, 70, 68, 72, 73, 75, 77],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.3
+                    },
+                    {
+                        label: '社会',
+                        data: [75, 78, 80, 82, 85, 83, 86, 87, 90, 92],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                },
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+</body>
+</html>
